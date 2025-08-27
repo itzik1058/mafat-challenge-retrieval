@@ -4,6 +4,7 @@ import numpy as np
 import os
 from transformers import AutoTokenizer, AutoModel
 from sklearn.metrics.pairwise import cosine_similarity
+from tqdm import trange
 
 
 class E5Retriever:
@@ -58,12 +59,9 @@ class E5Retriever:
         all_embeddings = []
         total_batches = (len(prefixed_texts) + batch_size - 1) // batch_size
 
-        for i in range(0, len(prefixed_texts), batch_size):
+        for i in trange(0, len(prefixed_texts), batch_size):
             batch_num = i // batch_size + 1
             if not is_query and batch_num % 50 == 0:
-                print(
-                    f"Processing batch {batch_num}/{total_batches} ({(batch_num / total_batches) * 100:.1f}%)"
-                )
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
 
