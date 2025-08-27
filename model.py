@@ -23,7 +23,13 @@ class E5Retriever:
                 model_name = local_model_path
                 print(f"Using local E5 model from: {model_name}")
 
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or (
+            "cuda"
+            if torch.cuda.is_available()
+            else "mps"
+            if torch.mps.is_available()
+            else "cpu"
+        )
 
         # Clear GPU cache before loading model
         if torch.cuda.is_available():
@@ -164,7 +170,13 @@ class BGEReranker:
                 model_name = local_model_path
                 print(f"Using local BGE model from: {model_name}")
 
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or (
+            "cuda"
+            if torch.cuda.is_available()
+            else "mps"
+            if torch.mps.is_available()
+            else "cpu"
+        )
 
         print(f"Loading BGE reranker on device: {self.device}")
 
