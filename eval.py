@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
 
+import numpy as np
 from sklearn.metrics import ndcg_score
+from tqdm import tqdm
 from typer import Typer
 
 from model import predict, preprocess
@@ -23,19 +25,20 @@ def main(limit_queries: int | None = None):
 
     if limit_queries is not None:
         train_queries = train_queries[:limit_queries]
-        # train_paragraphs = [
-        #     paragraph["uuid"]
-        #     for query in train_queries
-        #     for paragraph in query["paragraphs"].values()
-        # ]
-        # corpus = {
-        #     uuid: entry for uuid, entry in corpus.items() if uuid in train_paragraphs
-        # }
+        train_paragraphs = [
+            paragraph["uuid"]
+            for query in train_queries
+            for paragraph in query["paragraphs"].values()
+        ]
+        corpus = {
+            uuid: entry for uuid, entry in corpus.items() if uuid in train_paragraphs
+        }
     print(f"Evaluating on {len(train_queries)} queries with {len(corpus)} paragraphs.")
 
     preprocessed_data = preprocess(corpus)
 
-    predictions = [predict(query, preprocessed_data) for query in train_queries]
+    progress = tqdm(train_queries)
+    predictions = (predict(query, preprocessed_data) for query in progress)
 
     ndcg_20 = []
     for query, prediction in zip(train_queries, predictions):
@@ -54,9 +57,10 @@ def main(limit_queries: int | None = None):
             true_relevance.append(score)
             scores.append(predicted_scores.get(uuid, -1000))
         ndcg_20.append(ndcg_score([true_relevance], [scores], k=20))
-    mean_ndcg_20 = sum(ndcg_20) / len(ndcg_20)
 
-    print(mean_ndcg_20)
+        progress.set_postfix_str(f"NDCG@20: {np.mean(ndcg_20):.4f}")
+
+    print(np.mean(ndcg_20))
 
 
 if __name__ == "__main__":

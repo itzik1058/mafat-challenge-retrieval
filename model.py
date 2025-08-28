@@ -49,7 +49,7 @@ class E5Retriever:
         self.corpus_ids = []
         self.corpus_embeddings = None
 
-    def embed_texts(self, texts, is_query=False, batch_size=32):
+    def embed_texts(self, texts, is_query=False, batch_size=32, progress=False):
         """
         Generates embeddings for texts using E5 model with proper prefixes.
         E5 requires specific prefixes for queries vs passages.
@@ -65,7 +65,12 @@ class E5Retriever:
         all_embeddings = []
         total_batches = (len(prefixed_texts) + batch_size - 1) // batch_size
 
-        for i in trange(0, len(prefixed_texts), batch_size):
+        batches = (
+            trange(0, len(prefixed_texts), batch_size)
+            if progress
+            else range(0, len(prefixed_texts), batch_size)
+        )
+        for i in batches:
             batch_num = i // batch_size + 1
             if not is_query and batch_num % 50 == 0:
                 if torch.cuda.is_available():
@@ -305,7 +310,10 @@ def preprocess(corpus_dict):
     # Compute embeddings with conservative batch size for retrieval
     print("Computing E5 embeddings...")
     retriever.corpus_embeddings = retriever.embed_texts(
-        passages, is_query=False, batch_size=32
+        passages,
+        is_query=False,
+        batch_size=32,
+        progress=True,
     )
 
     print("✓ Corpus preprocessing complete!")
@@ -354,7 +362,7 @@ def predict(query, preprocessed_data):
 
     try:
         # STAGE 1: E5 Retrieval (get top 100 candidates)
-        print("Stage 1: E5 retrieval...")
+        # print("Stage 1: E5 retrieval...")
         query_embedding = retriever.embed_texts(
             [query_text], is_query=True, batch_size=1
         )
@@ -370,7 +378,7 @@ def predict(query, preprocessed_data):
         candidate_passages = [corpus_texts.get(doc_id, "") for doc_id in candidate_ids]
 
         # STAGE 2: BGE Reranking (rerank top 100 -> top 20)
-        print("Stage 2: BGE reranking...")
+        # print("Stage 2: BGE reranking...")
         reranked_results = reranker.rerank(
             query_text, candidate_passages, candidate_ids, top_k=20
         )
@@ -385,7 +393,7 @@ def predict(query, preprocessed_data):
                 }
             )
 
-        print(f"✓ Returned {len(results)} results with reranker scores")
+        # print(f"✓ Returned {len(results)} results with reranker scores")
         return results
 
     except Exception as e:
