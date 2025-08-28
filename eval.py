@@ -52,7 +52,7 @@ def main(limit_queries: int | None = None):
         true_relevance, scores = [], []
         for uuid, score in paragraph_relevance.items():
             true_relevance.append(score)
-            scores.append(predicted_scores[uuid])
+            scores.append(predicted_scores.get(uuid, -1000))
         ndcg_20.append(ndcg_score([true_relevance], [scores], k=20))
     mean_ndcg_20 = sum(ndcg_20) / len(ndcg_20)
 
