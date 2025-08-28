@@ -6,7 +6,7 @@ from sklearn.metrics import ndcg_score
 from tqdm import tqdm
 from typer import Typer
 
-from model import predict, preprocess
+from model import Paragraph, Query, predict, preprocess
 
 app = Typer()
 
@@ -17,11 +17,13 @@ def main(limit_queries: int | None = None):
     # cache_path = Path("env/preprocessed_data.json")
 
     with (data_path / "hsrc_corpus.jsonl").open() as f:
-        corpus_entries = [json.loads(line) for line in f.readlines()]
-    corpus = {entry["uuid"]: entry for entry in corpus_entries}
+        paragraphs = [json.loads(line) for line in f.readlines()]
+    corpus: dict[str, Paragraph] = {
+        paragraph["uuid"]: paragraph for paragraph in paragraphs
+    }
 
     with (data_path / "hsrc_train.jsonl").open() as f:
-        train_queries = [json.loads(line) for line in f.readlines()]
+        train_queries: list[Query] = [json.loads(line) for line in f.readlines()]
 
     if limit_queries is not None:
         train_queries = train_queries[:limit_queries]
